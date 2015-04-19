@@ -1,0 +1,29 @@
+{
+  "mainFile": "main.py", 
+  "use-tabs": false, 
+  "venv": "", 
+  "relatedProjects": [], 
+  "name": "IC-Leitor", 
+  "license": "GNU General Public License v2", 
+  "url": "", 
+  "pythonPath": "python", 
+  "preExecScript": "", 
+  "additional_builtins": [], 
+  "programParams": "", 
+  "indentation": 4, 
+  "PYTHONPATH": "", 
+  "supported-extensions": [
+    ".py", 
+    ".html", 
+    ".jpg", 
+    ".png", 
+    ".ui", 
+    ".css", 
+    ".json", 
+    ".js", 
+    ".ini"
+  ], 
+  "project-type": "", 
+  "postExecScript": "", 
+  "description": "Projeto de inicia\u00e7\u00e3o para leitura de dado do sensor s\u00f4nico."
+}
