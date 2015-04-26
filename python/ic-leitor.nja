@@ -6,7 +6,7 @@
   "name": "IC-Leitor", 
   "license": "GNU General Public License v2", 
   "url": "", 
-  "pythonPath": "python", 
+  "pythonPath": "C:/Python27/pythonw.exe", 
   "preExecScript": "", 
   "additional_builtins": [], 
   "programParams": "", 

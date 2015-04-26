@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
-import interface_usuario
-import leitor_serial
+import interface_usuario as Interface
+#import leitor_serial as Leitor
 
 #inicia a aplicação
-interface_usuario = interface_usuario.Interface()
-leitor = leitor_serial.Leitor()
-leitor.Le()
+interface_usuario = Interface.Interface()
+#leitor = Leitor.Leitor()
+#leitor.Le()
