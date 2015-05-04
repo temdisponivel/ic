@@ -3,20 +3,34 @@ import wx
 import wx.grid as wxgrid
 import wx.lib.scrolledpanel as scrolledpanel
 import leitor_serial as Leitor
-import wx.lib.plot as plot
+import numpy as np
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
 
 
-class Grafico(plot.PlotCanvas):
+class Grafico(wx.Panel):
 
-    LARGURA_GRAFICOS = 400
-    ALTURA_GRAFICOS = 250
+    ALTURA_GRAFICO = 1000;
+    LARGURA_GRAFICO = 1000;
 
-    def __init__(self, parente, nome, label_x, label_y):
-        plot.PlotCanvas.__init__(self, parente, -1, style=wx.BORDER_NONE, size=wx.Size(Grafico.LARGURA_GRAFICOS, Grafico.ALTURA_GRAFICOS))
-        self.data = [(1, 2), (2, 3), (3, 5), (4, 6), (5, 8), (6, 8), (10, 10)]
-        line = plot.PolyLine(self.data, legend='', colour='pink', width=2)
-        gc = plot.PlotGraphics([line], nome, label_x, label_y)
-        self.Draw(gc, xAxis=(0, 15), yAxis=(0, 15))
+    def __init__(self, pai, posicao):
+        wx.Panel.__init__(self, pai, -1, posicao, size=(Grafico.LARGURA_GRAFICO, Grafico.ALTURA_GRAFICO))
+
+        #cria uma nova figura que vai conter o grafico
+        self.figura = Figure()
+
+        #cria um canvas para imagem
+        self.canvas = FigureCanvas(self, -1, self.figura)
+
+        #cria um só plot
+        self.eixos = self.figura.add_subplot(111)
+
+    #desenha os pontos x e y. Dois vetores que devem ter o mesmo tamanho
+    #os vertices serão (pontosX[n], pontosY[n])
+    def desenha(self, pontosX, pontosY):
+        #adiciona os pontos x e y no grafico
+        self.eixos.plot(pontosX, pontosY)
+        self.canvas.draw()
 
 
 #classe do programa, contem os controles de tela, a janela, etc. Herda de wx.Frame
@@ -35,10 +49,14 @@ class Interface(wx.Frame):
         wx.Frame.__init__(self, None, 0, "Sensor Sônico", (0, 0), (Interface.LARGURA_TELA, Interface.ALTURA_TELA))
 
         #seta cor de fundo branca
-        #self.SetBackgroundColour("white")
+        self.SetBackgroundColour("white")
 
         #inicia o leitor serial
         self.leitor = Leitor.Leitor()
+
+        #adiciona status bar
+        self.CreateStatusBar()
+        self.SetStatusText("Ok")
 
         #cria botão de iniciar e finalizar
         self.btn_iniciar = wx.Button(self, 2, "Iniciar", (10, 10), (Interface.LARGURA_BOTOES, Interface.ALTURA_BOTOES))
@@ -48,8 +66,12 @@ class Interface(wx.Frame):
 
         #cria o panel onde ficará a grid
         self.panel_grid = scrolledpanel.ScrolledPanel(self, -1, (10, 70), (100, 300))
-        self.grafico_velocidade = Grafico(self, "VELOCIDADE", "X", "T")
-        self.grafico_aceleracao = Grafico(self, "ACELERAÇÃO", "V", "T")
+
+        #cria os graficos
+        self.grafico_velocidade = Grafico(self, (500, 10))
+        self.grafico_aceleracao = Grafico(self, (500, 270))
+        self.grafico_velocidade.SetBackgroundColour("black")
+        self.grafico_aceleracao.SetBackgroundColour("black")
 
         #cria a grid para mostrar os dados da leitura mostrando no panel
         self.grid_dados = wxgrid.Grid(self.panel_grid)
@@ -70,14 +92,14 @@ class Interface(wx.Frame):
 
         #mostra a tela e entra no loop de eventos do aplicativo
         self.Show(True)
-        self.DesenhaLinhaVelocidade(wx.Point(0, 0), wx.Point(1000, 100))
-        self.DesenhaLinhaAceleracao(wx.Point(0, 0), wx.Point(1000, 100))
         self.app.MainLoop()
 
     #Evento do botao iniciar
     def OnIniciar(self, event):
+        self.statusbar.SetStatusText("Lendo dados da porta serial...")
         self.leitor.Inicia()
 
     #Evento do botão finalizar
     def OnFinalizar(self, event):
+        self.statusbar.SetStatusText("Ok")
         self.leitor.Finaliza()
