@@ -3,18 +3,20 @@ import serial
 import platform
 import threading
 import serial.tools.list_ports
+import time
 
 
 #classe para leitura dos dados que chegam da porta serial
 class Leitor(threading.Thread):
 
-    porta = '/dev/ttyUSB0'
-    frequencia_leitura = 9600
-    arquivo_gravacao = "saida_serial_arduino.txt"
+    INTEVALO_LEITURA = 1.0/60.0
 
-    def __init__(self):
+    def __init__(self, interface):
         #contrutor da thread
         threading.Thread.__init__(self)
+
+        #define a porta padrão como ttyUSB0 para sistemas Unix
+        self.porta = '/dev/ttyUSB0'
 
         #pega todas as portas seriais
         portas = list(serial.tools.list_ports.comports())
@@ -23,18 +25,22 @@ class Leitor(threading.Thread):
         for porta in portas:
             #se estamos rodando no windows
             if platform.system() == 'Windows':
-                if "USB Serial Port (COM3)" in porta[1]:
-                    Leitor.porta = porta[0]
+                if "USB Serial Port" in porta[1]:
+                    self.porta = porta[0]
 
         self.lendo = False
+        self.frequencia_leitura = 9600
+        self.arquivo_gravacao = "saida_serial_arduino.txt"
+        self.interface = interface
 
     def Inicia(self):
         #abre o arquivo para leitura
         if self.lendo is False:
             self.lendo = True
-            self.arquivo = open(Leitor.arquivo_gravacao, "w")
-            self.porta_serial = serial.Serial(Leitor.porta, Leitor.frequencia_leitura)
+            self.arquivo = open(self.arquivo_gravacao, "w")
+            self.porta_serial = serial.Serial(self.porta, self.frequencia_leitura)
             self.stop_event = threading.Event()
+            self.tempo_leitura = 0;
             self.start()
 
     def run(self):
@@ -43,14 +49,19 @@ class Leitor(threading.Thread):
             linha_leitura = self.porta_serial.read()
 
             #coloca as informações do arduino na tela
-            print(linha_leitura)
+            self.interface.RecebeLeitura(linha_leitura, self.tempo_leitura)
 
             """
                 abre, escreve e fecha o arquivo. Aberto e fechado a toda leitura de linha
                 para que mesmo se a leitura for cancelada, haja dados no arquivo
             """
             if (not self.arquivo.closed):
-                self.arquivo.write(linha_leitura + "\n")
+                self.arquivo.write(linha_leitura)
+
+            self.tempo_leitura += Leitor.INTEVALO_LEITURA;
+
+            #só roda a cada 1/60 segundos
+            time.sleep(Leitor.INTEVALO_LEITURA)
 
     def Finaliza(self):
         if self.lendo:

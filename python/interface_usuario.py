@@ -8,6 +8,23 @@ from matplotlib.figure import Figure
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
 
 
+class DadoLeitura():
+
+    VELOCIDADE = 0
+    ACELERACAO = 0
+    TEMPO = 0
+    POSICAO = 0
+
+    def __init__(self, dado, tempo_leitura):
+        dadoFloat = float(dado)
+        DadoLeitura.TEMPO = tempo_leitura #tempo em millisegundos*
+        DadoLeitura.POSICAO = dadoFloat / 29.0 / 2.0 #distancia em CM
+        DadoLeitura.VELOCIDADE = DadoLeitura.POSICAO / DadoLeitura.TEMPO
+        DadoLeitura.ACELERACAO = DadoLeitura.VELOCIDADE / DadoLeitura.TEMPO
+
+    def __str__(self):
+        return "Tempo: " + str(DadoLeitura.TEMPO) + " | Posição: " + str(DadoLeitura.POSICAO) + " | Velocidade: " + str(DadoLeitura.VELOCIDADE) + " | Aceleração: " + str(DadoLeitura.ACELERACAO)
+
 class Grafico(wx.Panel):
 
     ALTURA_GRAFICO = 1000;
@@ -52,7 +69,7 @@ class Interface(wx.Frame):
         self.SetBackgroundColour("white")
 
         #inicia o leitor serial
-        self.leitor = Leitor.Leitor()
+        self.leitor = Leitor.Leitor(self)
 
         #adiciona status bar
         self.CreateStatusBar()
@@ -75,7 +92,11 @@ class Interface(wx.Frame):
 
         #cria a grid para mostrar os dados da leitura mostrando no panel
         self.grid_dados = wxgrid.Grid(self.panel_grid)
-        self.grid_dados.CreateGrid(10, 4)
+        self.grid_dados.CreateGrid(0, 4)
+        self.grid_dados.SetColLabelValue(0, "T")
+        self.grid_dados.SetColLabelValue(1, "X")
+        self.grid_dados.SetColLabelValue(2, "V")
+        self.grid_dados.SetColLabelValue(3, "A")
 
         #cria os sizer para os objetos da tela
         self.sizer_grid = wx.BoxSizer(wx.VERTICAL)
@@ -96,10 +117,31 @@ class Interface(wx.Frame):
 
     #Evento do botao iniciar
     def OnIniciar(self, event):
-        self.statusbar.SetStatusText("Lendo dados da porta serial...")
+        #self.statusbar.SetStatusText("Lendo dados da porta serial...")
         self.leitor.Inicia()
 
     #Evento do botão finalizar
     def OnFinalizar(self, event):
-        self.statusbar.SetStatusText("Ok")
+        #self.statusbar.SetStatusText("Ok")
         self.leitor.Finaliza()
+
+    def RecebeLeitura(self, dados, tempo):
+        #calcula os dados
+        try:
+           informacoes = float(dados)
+           informacoes = DadoLeitura(informacoes, tempo)
+        except Exception:
+            return None
+
+        print(informacoes)
+        self.grid_dados.AppendRows()
+        self.grid_dados.SetCellValue(self.grid_dados.GetNumberRows()-1, 0, str(informacoes.TEMPO))
+        self.grid_dados.SetCellValue(self.grid_dados.GetNumberRows()-1, 1, str(informacoes.POSICAO))
+        self.grid_dados.SetCellValue(self.grid_dados.GetNumberRows()-1, 2, str(informacoes.VELOCIDADE))
+        self.grid_dados.SetCellValue(self.grid_dados.GetNumberRows()-1, 3, str(informacoes.ACELERACAO))
+
+        if (self.panel_grid.Size.GetHeight() < self.Size.GetHeight() - 150):
+            self.panel_grid.SetSizerAndFit(self.sizer_grid)
+
+
+
