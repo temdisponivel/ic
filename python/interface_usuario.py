@@ -16,11 +16,11 @@ class DadoLeitura():
     POSICAO = 0
 
     def __init__(self, dado, tempo_leitura):
-        dadoFloat = float(dado)
-        DadoLeitura.TEMPO = tempo_leitura #tempo em millisegundos*
-        DadoLeitura.POSICAO = dadoFloat / 29.0 / 2.0 #distancia em CM
-        DadoLeitura.VELOCIDADE = DadoLeitura.POSICAO / DadoLeitura.TEMPO
-        DadoLeitura.ACELERACAO = DadoLeitura.VELOCIDADE / DadoLeitura.TEMPO
+        self.dadoFloat = float(dado)
+        self.TEMPO = tempo_leitura #tempo em millisegundos*
+        self.POSICAO = self.dadoFloat / 29.0 / 2.0 #distancia em CM
+        self.VELOCIDADE = self.POSICAO / self.TEMPO
+        self.ACELERACAO = self.VELOCIDADE / self.TEMPO
 
     def __str__(self):
         return "Tempo: " + str(DadoLeitura.TEMPO) + " | Posição: " + str(DadoLeitura.POSICAO) + " | Velocidade: " + str(DadoLeitura.VELOCIDADE) + " | Aceleração: " + str(DadoLeitura.ACELERACAO)
@@ -124,14 +124,14 @@ class Interface(wx.Frame):
 
     #Evento do botao iniciar
     def OnIniciar(self, event):
-        #self.statusbar.SetStatusText("Lendo dados da porta serial...")
+        self.StatusBar.SetStatusText("Lendo dados da porta serial...")
         self.leitor.Inicia()
         self.arquivo = open(self.arquivo_gravacao, "w")
         self.arquivo_csv = open(self.arquivo_gravacao_csv, "w")
 
     #Evento do botão finalizar
     def OnFinalizar(self, event):
-        #self.statusbar.SetStatusText("Ok")
+        self.StatusBar.SetStatusText("Ok")
         self.leitor.Finaliza()
         self.arquivo.close()
 
@@ -145,10 +145,6 @@ class Interface(wx.Frame):
 
         print(informacoes)
 
-        """
-            abre, escreve e fecha o arquivo. Aberto e fechado a toda leitura de linha
-            para que mesmo se a leitura for cancelada, haja dados no arquivo
-        """
         if (not self.arquivo.closed):
             self.arquivo.write(informacoes.__str__() + '\r')
 
@@ -163,18 +159,17 @@ class Interface(wx.Frame):
 
         self.informacoes_leitura.append(informacoes)
 
+        velocidades = []
         tempos = []
         posicoes = []
 
         for informacao in self.informacoes_leitura:
             tempos.append(informacao.TEMPO)
             posicoes.append(informacao.POSICAO)
-
+            velocidades.append(informacao.VELOCIDADE)
 
         self.grafico_velocidade.Desenha(tempos, posicoes)
+        self.grafico_aceleracao.Desenha(tempos, velocidades)
 
         if (self.panel_grid.Size.GetHeight() < self.Size.GetHeight() - 150):
             self.panel_grid.SetSizerAndFit(self.sizer_grid)
-
-
-
