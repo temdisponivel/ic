@@ -18,15 +18,15 @@ class DadoLeitura():
     def __init__(self, dado, tempo_leitura):
         self.dadoFloat = float(dado)
         self.TEMPO = tempo_leitura #tempo em millisegundos*
-        self.POSICAO = self.dadoFloat / 29.0 / 2.0 #distancia em CM
+        self.POSICAO = (self.dadoFloat / 29.0) / 2.0 #distancia em CM
         self.VELOCIDADE = self.POSICAO / self.TEMPO
         self.ACELERACAO = self.VELOCIDADE / self.TEMPO
 
     def __str__(self):
-        return "Tempo: " + str(DadoLeitura.TEMPO) + " | Posição: " + str(DadoLeitura.POSICAO) + " | Velocidade: " + str(DadoLeitura.VELOCIDADE) + " | Aceleração: " + str(DadoLeitura.ACELERACAO)
+        return "Tempo: " + str(self.TEMPO) + " | Posição: " + str(self.POSICAO) + " | Velocidade: " + str(self.VELOCIDADE) + " | Aceleração: " + str(self.ACELERACAO)
 
     def GetCsv(self):
-        return str(DadoLeitura.TEMPO) + "," + str(DadoLeitura.POSICAO) + "," + str(DadoLeitura.VELOCIDADE) + "," + str(DadoLeitura.ACELERACAO)
+        return str(self.TEMPO) + "," + str(self.POSICAO) + "," + str(self.VELOCIDADE) + "," + str(self.ACELERACAO)
 
 class Grafico(wx.Panel):
 
@@ -139,6 +139,10 @@ class Interface(wx.Frame):
         #calcula os dados
         try:
            informacoes = float(dados)
+
+           if (informacoes == 0):
+               return None
+
            informacoes = DadoLeitura(informacoes, tempo)
         except Exception:
             return None
