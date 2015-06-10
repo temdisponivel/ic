@@ -30,14 +30,12 @@ class Leitor(threading.Thread):
 
         self.lendo = False
         self.frequencia_leitura = 9600
-        self.arquivo_gravacao = "saida_serial_arduino.txt"
         self.interface = interface
 
     def Inicia(self):
         #abre o arquivo para leitura
         if self.lendo is False:
             self.lendo = True
-            self.arquivo = open(self.arquivo_gravacao, "w")
             self.porta_serial = serial.Serial(self.porta, self.frequencia_leitura)
             self.stop_event = threading.Event()
             self.tempo_leitura = 0;
@@ -51,14 +49,8 @@ class Leitor(threading.Thread):
             #coloca as informações do arduino na tela
             self.interface.RecebeLeitura(linha_leitura, self.tempo_leitura)
 
-            """
-                abre, escreve e fecha o arquivo. Aberto e fechado a toda leitura de linha
-                para que mesmo se a leitura for cancelada, haja dados no arquivo
-            """
-            if (not self.arquivo.closed):
-                self.arquivo.write(linha_leitura)
-
-            self.tempo_leitura += Leitor.INTEVALO_LEITURA;
+            #pega o tempo da leitura
+            self.tempo_leitura += Leitor.INTEVALO_LEITURA
 
             #só roda a cada 1/60 segundos
             time.sleep(Leitor.INTEVALO_LEITURA)
@@ -66,6 +58,5 @@ class Leitor(threading.Thread):
     def Finaliza(self):
         if self.lendo:
             self.stop_event.set()
-            self.arquivo.close()
             self.porta_serial.close()
             self.lendo = False

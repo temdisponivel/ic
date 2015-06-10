@@ -25,10 +25,13 @@ class DadoLeitura():
     def __str__(self):
         return "Tempo: " + str(DadoLeitura.TEMPO) + " | Posição: " + str(DadoLeitura.POSICAO) + " | Velocidade: " + str(DadoLeitura.VELOCIDADE) + " | Aceleração: " + str(DadoLeitura.ACELERACAO)
 
+    def GetCsv(self):
+        return str(DadoLeitura.TEMPO) + "," + str(DadoLeitura.POSICAO) + "," + str(DadoLeitura.VELOCIDADE) + "," + str(DadoLeitura.ACELERACAO)
+
 class Grafico(wx.Panel):
 
-    ALTURA_GRAFICO = 1000;
-    LARGURA_GRAFICO = 1000;
+    ALTURA_GRAFICO = 1000
+    LARGURA_GRAFICO = 1000
 
     def __init__(self, pai, posicao):
         wx.Panel.__init__(self, pai, -1, posicao, size=(Grafico.LARGURA_GRAFICO, Grafico.ALTURA_GRAFICO))
@@ -44,10 +47,11 @@ class Grafico(wx.Panel):
 
     #desenha os pontos x e y. Dois vetores que devem ter o mesmo tamanho
     #os vertices serão (pontosX[n], pontosY[n])
-    def desenha(self, pontosX, pontosY):
+    def Desenha(self, pontosX, pontosY):
         #adiciona os pontos x e y no grafico
         self.eixos.plot(pontosX, pontosY)
         self.canvas.draw()
+
 
 
 #classe do programa, contem os controles de tela, a janela, etc. Herda de wx.Frame
@@ -61,6 +65,11 @@ class Interface(wx.Frame):
     def __init__(self):
         #cria o aplicativo
         self.app = wx.App()
+
+        self.arquivo_gravacao = "saida_serial_arduino.txt"
+        self.arquivo_gravacao_csv = "saida_serial_arduino.csv"
+
+        self.informacoes_leitura = []
 
         #chama o contrutor do pai - wx.Frame
         wx.Frame.__init__(self, None, 0, "Sensor Sônico", (0, 0), (Interface.LARGURA_TELA, Interface.ALTURA_TELA))
@@ -86,9 +95,7 @@ class Interface(wx.Frame):
 
         #cria os graficos
         self.grafico_velocidade = Grafico(self, (500, 10))
-        self.grafico_aceleracao = Grafico(self, (500, 270))
-        self.grafico_velocidade.SetBackgroundColour("black")
-        self.grafico_aceleracao.SetBackgroundColour("black")
+        self.grafico_aceleracao = Grafico(self, (500, 525))
 
         #cria a grid para mostrar os dados da leitura mostrando no panel
         self.grid_dados = wxgrid.Grid(self.panel_grid)
@@ -119,11 +126,14 @@ class Interface(wx.Frame):
     def OnIniciar(self, event):
         #self.statusbar.SetStatusText("Lendo dados da porta serial...")
         self.leitor.Inicia()
+        self.arquivo = open(self.arquivo_gravacao, "w")
+        self.arquivo_csv = open(self.arquivo_gravacao_csv, "w")
 
     #Evento do botão finalizar
     def OnFinalizar(self, event):
         #self.statusbar.SetStatusText("Ok")
         self.leitor.Finaliza()
+        self.arquivo.close()
 
     def RecebeLeitura(self, dados, tempo):
         #calcula os dados
@@ -134,11 +144,34 @@ class Interface(wx.Frame):
             return None
 
         print(informacoes)
+
+        """
+            abre, escreve e fecha o arquivo. Aberto e fechado a toda leitura de linha
+            para que mesmo se a leitura for cancelada, haja dados no arquivo
+        """
+        if (not self.arquivo.closed):
+            self.arquivo.write(informacoes.__str__() + '\r')
+
+        if (not self.arquivo_csv.closed):
+            self.arquivo_csv.write(informacoes.GetCsv() + '\r')
+
         self.grid_dados.AppendRows()
         self.grid_dados.SetCellValue(self.grid_dados.GetNumberRows()-1, 0, str(informacoes.TEMPO))
         self.grid_dados.SetCellValue(self.grid_dados.GetNumberRows()-1, 1, str(informacoes.POSICAO))
         self.grid_dados.SetCellValue(self.grid_dados.GetNumberRows()-1, 2, str(informacoes.VELOCIDADE))
         self.grid_dados.SetCellValue(self.grid_dados.GetNumberRows()-1, 3, str(informacoes.ACELERACAO))
+
+        self.informacoes_leitura.append(informacoes)
+
+        tempos = []
+        posicoes = []
+
+        for informacao in self.informacoes_leitura:
+            tempos.append(informacao.TEMPO)
+            posicoes.append(informacao.POSICAO)
+
+
+        self.grafico_velocidade.Desenha(tempos, posicoes)
 
         if (self.panel_grid.Size.GetHeight() < self.Size.GetHeight() - 150):
             self.panel_grid.SetSizerAndFit(self.sizer_grid)
