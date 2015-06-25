@@ -115,11 +115,11 @@ class Interface(wx.Frame, Leitor.RecebeLeitura):
 
         #cria botão de iniciar e finalizar
         self.btn_iniciar = wx.Button(self, 2, "Iniciar", (10, 10), (Interface.largura_botoes, Interface.altura_botoes))
-        self.btn_finalizar = wx.Button(self, 3, "Finalizar", (Interface.largura_botoes + 10, 10), (Interface.largura_botoes, Interface.altura_botoes))
-        self.btn_limpar = wx.Button(self, 4, "Limpar", (Interface.largura_botoes * 2 + 10, 10), (Interface.largura_botoes, Interface.altura_botoes))
+        self.btn_pausar = wx.Button(self, 3, "Pausar", (Interface.largura_botoes + 10, 10), (Interface.largura_botoes, Interface.altura_botoes))
+        self.btn_finalizar = wx.Button(self, 4, "Finalizar", (Interface.largura_botoes * 2 + 10, 10), (Interface.largura_botoes, Interface.altura_botoes))
         self.Bind(wx.EVT_BUTTON, self.on_iniciar, id=2)
-        self.Bind(wx.EVT_BUTTON, self.on_finalizar, id=3)
-        self.Bind(wx.EVT_BUTTON, self.on_limpar, id=4)
+        self.Bind(wx.EVT_BUTTON, self.on_pausar, id=3)
+        self.Bind(wx.EVT_BUTTON, self.on_finalizar, id=4)
 
         #cria check box para inicio automático de leitura
         self.chk_inicio_automatico = wx.CheckBox(self, 5, "Inicio automatico (inicia no movimento).", (10, Interface.altura_botoes + 20))
@@ -171,13 +171,27 @@ class Interface(wx.Frame, Leitor.RecebeLeitura):
             if self.dado_inicial == None:
                 self.dado_inicial = dado
             else:
-                return self.dado_inicial != dado
+                if (self.dado_inicial != dado):
+                    #se vamos ler, podemos definir a leitura automatica como false e desabilita o checkbox durante leitura
+                    self.automatico = False
+                    self.chk_inicio_automatico.SetValue(False)
+                    self.btn_iniciar.SetLabelText("Continuar")
+                    self.desabilita([self.chk_inicio_automatico, self.btn_finalizar, self.btn_iniciar])
+                    return True
+                else:
+                    return False
         else:
             return True
 
-    def Desabilita(self, controles):
+    #desabilita uma série de controles
+    def desabilita(self, controles):
         for controle in controles:
             controle.Disable()
+
+    #desabilita uma série de controles
+    def habilita(self, controles):
+        for controle in controles:
+            controle.Enable()
 
     #função que limpa os dados da tela
     def limpa(self):
@@ -222,16 +236,20 @@ class Interface(wx.Frame, Leitor.RecebeLeitura):
         #escreve cabeçalho das tabelas
         self.arquivo_csv.write("Tempo,Dado Arduino,Posição CM,Velocidade,Aceleração \r")
 
+        self.automatico = False
+        self.chk_inicio_automatico.SetValue(False)
+        self.btn_iniciar.SetLabelText("Continuar")
+        self.desabilita([self.chk_inicio_automatico, self.btn_finalizar, self.btn_iniciar])
+
     #Evento do botão finalizar
-    def on_finalizar(self, event):
+    def on_pausar(self, event):
         self.StatusBar.SetStatusText("Ok")
 
         #finaliza leitura do arduino
         self.leitor.pausa()
 
         #habilita novamento o checkbox
-        self.chk_inicio_automatico.Enable()
-        self.btn_limpar.Enable()
+        self.habilita([self.chk_inicio_automatico, self.btn_finalizar, self.btn_iniciar])
 
     #processa os dados lidos do arduino
     def receber(self, dado_leitura):
@@ -249,11 +267,6 @@ class Interface(wx.Frame, Leitor.RecebeLeitura):
         #valida se devemos processar as infomacoes (validacao necessaria por causa da leitura automatica)
         if not self.valida_leitura(informacoes):
             return None
-        else:
-            #se vamos ler, podemos definir a leitura automatica como false e desabilita o checkbox durante leitura
-            self.automatico = False
-            self.chk_inicio_automatico.SetValue(False)
-            self.Desabilita([self.chk_inicio_automatico, self.btn_limpar])
 
         #escreve informações nos arquivos
         if (self.arquivo != None and not self.arquivo.closed):
@@ -290,8 +303,9 @@ class Interface(wx.Frame, Leitor.RecebeLeitura):
             self.panel_grid.SetSizerAndFit(self.sizer_grid)
 
     #evento do botão limpar
-    def on_limpar(self, event):
+    def on_finalizar(self, event):
         self.limpa()
+        self.btn_iniciar.SetLabelText("Iniciar")
 
     #evento de fechar o programa
     def on_close(self, event):
