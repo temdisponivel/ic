@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import time
 import wx
 import wx.grid as wxgrid
 import wx.lib.scrolledpanel as scrolledpanel
@@ -114,16 +115,19 @@ class Interface(wx.Frame, Leitor.RecebeLeitura):
         self.SetStatusText("Ok")
 
         #cria botão de iniciar e finalizar
-        self.btn_iniciar = wx.Button(self, 2, "Iniciar", (10, 10), (Interface.largura_botoes, Interface.altura_botoes))
-        self.btn_pausar = wx.Button(self, 3, "Pausar", (Interface.largura_botoes + 10, 10), (Interface.largura_botoes, Interface.altura_botoes))
-        self.btn_finalizar = wx.Button(self, 4, "Finalizar", (Interface.largura_botoes * 2 + 10, 10), (Interface.largura_botoes, Interface.altura_botoes))
+        self.btn_iniciar = wx.Button(self, 2, "Iniciar", pos=(10, 10), size=(Interface.largura_botoes, Interface.altura_botoes))
+        self.btn_pausar = wx.Button(self, 3, "Pausar", pos=(Interface.largura_botoes + 10, 10), size=(Interface.largura_botoes, Interface.altura_botoes))
+        self.btn_finalizar = wx.Button(self, 4, "Finalizar", pos=(Interface.largura_botoes * 2 + 10, 10), size=(Interface.largura_botoes, Interface.altura_botoes))
         self.Bind(wx.EVT_BUTTON, self.on_iniciar, id=2)
         self.Bind(wx.EVT_BUTTON, self.on_pausar, id=3)
         self.Bind(wx.EVT_BUTTON, self.on_finalizar, id=4)
 
         #cria check box para inicio automático de leitura
-        self.chk_inicio_automatico = wx.CheckBox(self, 5, "Inicio automatico (inicia no movimento).", (10, Interface.altura_botoes + 20))
+        self.chk_inicio_automatico = wx.CheckBox(self, 5, "Inicio automatico (inicia no movimento).", pos=(10, Interface.altura_botoes + 20))
         self.Bind(wx.EVT_CHECKBOX, self.on_chk_inicio_automatico, id=5)
+
+        self.lbl_segundos = wx.StaticText(self, pos=(Interface.largura_botoes * 3 + 15, 15), label="Ler por (segundos):")
+        self.txt_segundos = wx.TextCtrl(self, pos=(Interface.largura_botoes * 3 + self.lbl_segundos.Size.width + 25, 10), size=(Interface.altura_botoes, Interface.altura_botoes))
 
         #cria o panel onde ficará a grid
         self.panel_grid = scrolledpanel.ScrolledPanel(self, -1, (10, 70), (200, 300))
@@ -166,20 +170,14 @@ class Interface(wx.Frame, Leitor.RecebeLeitura):
         #conecta o evento de fechar a janela a função
         self.Bind(wx.EVT_CLOSE, self.on_close)
 
+    #valida se devemos ler o dado quando estiver no automatico
     def valida_leitura(self, dado):
         if self.automatico:
             if self.dado_inicial == None:
                 self.dado_inicial = dado
             else:
-                if (self.dado_inicial != dado):
-                    #se vamos ler, podemos definir a leitura automatica como false e desabilita o checkbox durante leitura
-                    self.automatico = False
-                    self.chk_inicio_automatico.SetValue(False)
-                    self.btn_iniciar.SetLabelText("Continuar")
-                    self.desabilita([self.chk_inicio_automatico, self.btn_finalizar, self.btn_iniciar])
-                    return True
-                else:
-                    return False
+                self.inicia_leitura()
+                return self.dado_inicial != dado
         else:
             return True
 
@@ -203,6 +201,8 @@ class Interface(wx.Frame, Leitor.RecebeLeitura):
         self.grafico_velocidade.limpa()
         self.grafico_aceleracao.limpa()
         self.leitor.reinicia()
+        self.dado_inicial = None
+        self.inicio_leitura = 0
 
         #fecha arquivos
         if (self.arquivo != None):
@@ -236,10 +236,16 @@ class Interface(wx.Frame, Leitor.RecebeLeitura):
         #escreve cabeçalho das tabelas
         self.arquivo_csv.write("Tempo,Dado Arduino,Posição CM,Velocidade,Aceleração \r")
 
+        self.inicia_leitura()
+
+    #funcao chamada sempre que iniciamos uma leitura
+    def inicia_leitura(self):
+        #se vamos ler, podemos definir a leitura automatica como false e desabilita o checkbox durante leitura
         self.automatico = False
         self.chk_inicio_automatico.SetValue(False)
         self.btn_iniciar.SetLabelText("Continuar")
         self.desabilita([self.chk_inicio_automatico, self.btn_finalizar, self.btn_iniciar])
+        self.inicio_leitura = time.clock()
 
     #Evento do botão finalizar
     def on_pausar(self, event):
@@ -250,6 +256,9 @@ class Interface(wx.Frame, Leitor.RecebeLeitura):
 
         #habilita novamento o checkbox
         self.habilita([self.chk_inicio_automatico, self.btn_finalizar, self.btn_iniciar])
+
+        self.dado_inicial = None
+        self.inicio_leitura = 0
 
     #processa os dados lidos do arduino
     def receber(self, dado_leitura):
@@ -301,6 +310,16 @@ class Interface(wx.Frame, Leitor.RecebeLeitura):
         #atualiza tamanho da grid desde que seja menor que a janela
         if (self.panel_grid.Size.GetHeight() < self.Size.GetHeight() - 150):
             self.panel_grid.SetSizerAndFit(self.sizer_grid)
+
+        try:
+            #valida valor do campo
+            tempo_leitura = float(self.txt_segundos.GetValue())
+
+            #se passou do tempo, pausa a leitura
+            if (time.clock() - self.inicio_leitura > tempo_leitura):
+                self.on_pausar(None)
+        except Exception:
+            return None
 
     #evento do botão limpar
     def on_finalizar(self, event):
