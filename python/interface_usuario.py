@@ -31,8 +31,8 @@ class DadoLeituraVelocidadeAceleracao(Leitor.DadoLeitura):
 #classe que representa os graficos que sao mostrados na tela
 class Grafico(wx.Panel):
 
-    altura_grafico = 400
-    largura_grafico = 500
+    altura_grafico = 340
+    largura_grafico = 550
 
     def __init__(self, pai, posicao, labely, labelx):
         wx.Panel.__init__(self, pai, -1, posicao, size=(Grafico.largura_grafico, Grafico.altura_grafico))
@@ -50,12 +50,13 @@ class Grafico(wx.Panel):
         #cria um canvas para imagem
         self.canvas = FigureCanvas(self, -1, self.figura)
 
-        self.figura.set_canvas(self.canvas)
-
         #cria um só plot
         self.eixos = self.figura.add_subplot(111)
         self.eixos.set_ylabel(self.labely)
         self.eixos.set_xlabel(self.labelx)
+
+        self.figura.set_size_inches(7, 4.2, forward=True)
+        self.figura.set_edgecolor("m")
 
     #desenha os pontos x e y. Dois vetores que devem ter o mesmo tamanho
     #os vertices serão (pontosX[n], pontosY[n])
@@ -66,7 +67,7 @@ class Grafico(wx.Panel):
 
     #limpa o grafico
     def limpa(self):
-        self.desenha([], [])
+        self.inicia()
 
 
 
@@ -183,10 +184,17 @@ class Interface(wx.Frame, Leitor.RecebeLeitura):
         if (self.grid_dados.NumberRows > 0):
             self.grid_dados.DeleteRows(0, self.grid_dados.GetNumberRows())
 
+        #limpa os dados
+        self.informacoes_leitura = []
         self.grafico_velocidade.limpa()
         self.grafico_aceleracao.limpa()
-
         self.leitor.reinicia()
+
+        #fecha arquivos
+        if (self.arquivo != None):
+            self.arquivo.close()
+        if (self.arquivo_csv != None):
+            self.arquivo_csv.close()
 
     #evento do check box de inicio automatico
     def on_chk_inicio_automatico(self, event):
@@ -205,8 +213,11 @@ class Interface(wx.Frame, Leitor.RecebeLeitura):
         self.leitor.continua()
 
         #abre arquivos para escrita
-        self.arquivo = open(self.arquivo_gravacao, "w")
-        self.arquivo_csv = open(self.arquivo_gravacao_csv, "w")
+        if (self.arquivo == None or self.arquivo.closed):
+            self.arquivo = open(self.arquivo_gravacao, "w")
+
+        if (self.arquivo_csv == None or self.arquivo_csv):
+            self.arquivo_csv = open(self.arquivo_gravacao_csv, "w")
 
         #escreve cabeçalho das tabelas
         self.arquivo_csv.write("Tempo,Dado Arduino,Posição CM,Velocidade,Aceleração \r")
@@ -217,12 +228,6 @@ class Interface(wx.Frame, Leitor.RecebeLeitura):
 
         #finaliza leitura do arduino
         self.leitor.pausa()
-
-        #fecha arquivos
-        if (self.arquivo != None):
-            self.arquivo.close()
-        if (self.arquivo_csv != None):
-            self.arquivo_csv.close()
 
         #habilita novamento o checkbox
         self.chk_inicio_automatico.Enable()
@@ -284,11 +289,13 @@ class Interface(wx.Frame, Leitor.RecebeLeitura):
         if (self.panel_grid.Size.GetHeight() < self.Size.GetHeight() - 150):
             self.panel_grid.SetSizerAndFit(self.sizer_grid)
 
+    #evento do botão limpar
     def on_limpar(self, event):
         self.limpa()
 
     #evento de fechar o programa
     def on_close(self, event):
+        self.limpa()
         self.on_finalizar(event)
         self.leitor.finaliza()
         self.app.Exit()
