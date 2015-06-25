@@ -60,15 +60,18 @@ class Leitor(threading.Thread):
 
     def inicia(self):
         #abre o arquivo para leitura
-        if self.lendo is False:
-            self.lendo = True
-            self.porta_serial = serial.Serial(self.porta, self.frequencia_leitura)
-            self.stop_event = threading.Event()
-            self.tempo_leitura = 0
-            self.start()
+        self.porta_serial = serial.Serial(self.porta, self.frequencia_leitura)
+        self.tempo_leitura = 0
+        self.stop_event = threading.Event()
+        self.start()
 
     def run(self):
         while (not self.stop_event.is_set()):
+
+            #se nao é pra processar, n faz nd
+            if (not self.lendo):
+                continue
+
             #le as informações do arduino
             linha_leitura = self.porta_serial.readline()
 
@@ -76,13 +79,26 @@ class Leitor(threading.Thread):
             self.interface.receber(DadoLeitura(linha_leitura, self.tempo_leitura))
 
             #pega o tempo da leitura
-            self.tempo_leitura += Leitor.intervalo_leitura;
+            self.tempo_leitura += Leitor.intervalo_leitura
 
             #espera o intervalo definido na classe
             time.sleep(Leitor.intervalo_leitura)
 
+    #pausa a leitura dos dados
+    def pausa(self):
+        self.lendo = False
+
+    #continua a leitura dos dados
+    def continua(self):
+        self.lendo = True
+
+    #reinicia a leitura dos dados
+    def reinicia(self):
+        self.tempo_leitura = 0
+
+    #fecha porta serial e finaliza a thread. Se chamar inicia após disso, acontece erro.
+    #para pausar e reiniciar, use os métodos pausa e continua
     def finaliza(self):
-        if self.lendo:
-            self.stop_event.set()
-            self.porta_serial.close()
-            self.lendo = False
+        self.stop_event.set()
+        self.porta_serial.close()
+        self.lendo = False

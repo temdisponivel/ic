@@ -37,6 +37,13 @@ class Grafico(wx.Panel):
     def __init__(self, pai, posicao, labely, labelx):
         wx.Panel.__init__(self, pai, -1, posicao, size=(Grafico.largura_grafico, Grafico.altura_grafico))
 
+        self.labelx = labelx
+        self.labely = labely
+
+        self.inicia()
+
+    #funcao que inicia os gráficos
+    def inicia(self):
         #cria uma nova figura que vai conter o grafico
         self.figura = Figure()
 
@@ -47,8 +54,8 @@ class Grafico(wx.Panel):
 
         #cria um só plot
         self.eixos = self.figura.add_subplot(111)
-        self.eixos.set_ylabel(labely)
-        self.eixos.set_xlabel(labelx)
+        self.eixos.set_ylabel(self.labely)
+        self.eixos.set_xlabel(self.labelx)
 
     #desenha os pontos x e y. Dois vetores que devem ter o mesmo tamanho
     #os vertices serão (pontosX[n], pontosY[n])
@@ -57,9 +64,9 @@ class Grafico(wx.Panel):
         self.eixos.plot(pontosX, pontosY)
         self.canvas.draw()
 
+    #limpa o grafico
     def limpa(self):
-        #self.figura.
-        pass
+        self.desenha([], [])
 
 
 
@@ -93,8 +100,6 @@ class Interface(wx.Frame, Leitor.RecebeLeitura):
         self.arquivo_gravacao = "saida_serial_arduino.txt"
         self.arquivo_gravacao_csv = "saida_serial_arduino.csv"
 
-        self.informacoes_leitura = []
-
         self.sizer_janela = wx.BoxSizer(wx.HORIZONTAL)
 
         #seta cor de fundo branca
@@ -109,13 +114,15 @@ class Interface(wx.Frame, Leitor.RecebeLeitura):
 
         #cria botão de iniciar e finalizar
         self.btn_iniciar = wx.Button(self, 2, "Iniciar", (10, 10), (Interface.largura_botoes, Interface.altura_botoes))
-        self.btn_finalizar = wx.Button(self, 3, "Finalizar", (10, Interface.altura_botoes + 15), (Interface.largura_botoes, Interface.altura_botoes))
+        self.btn_finalizar = wx.Button(self, 3, "Finalizar", (Interface.largura_botoes + 10, 10), (Interface.largura_botoes, Interface.altura_botoes))
+        self.btn_limpar = wx.Button(self, 4, "Limpar", (Interface.largura_botoes * 2 + 10, 10), (Interface.largura_botoes, Interface.altura_botoes))
         self.Bind(wx.EVT_BUTTON, self.on_iniciar, id=2)
         self.Bind(wx.EVT_BUTTON, self.on_finalizar, id=3)
+        self.Bind(wx.EVT_BUTTON, self.on_limpar, id=4)
 
         #cria check box para inicio automático de leitura
-        self.chk_inicio_automatico = wx.CheckBox(self, 4, "Inicio automatico (inicia no movimento).", (Interface.largura_botoes + 20, 15))
-        self.Bind(wx.EVT_CHECKBOX, self.on_chk_inicio_automatico, id=4)
+        self.chk_inicio_automatico = wx.CheckBox(self, 5, "Inicio automatico (inicia no movimento).", (10, Interface.altura_botoes + 20))
+        self.Bind(wx.EVT_CHECKBOX, self.on_chk_inicio_automatico, id=5)
 
         #cria o panel onde ficará a grid
         self.panel_grid = scrolledpanel.ScrolledPanel(self, -1, (10, 70), (200, 300))
@@ -150,6 +157,10 @@ class Interface(wx.Frame, Leitor.RecebeLeitura):
         self.arquivo_csv = None
         self.automatico = False
         self.dado_inicial = None
+        self.informacoes_leitura = []
+
+        #inicia leitor dos dados
+        self.leitor.inicia()
 
         #conecta o evento de fechar a janela a função
         self.Bind(wx.EVT_CLOSE, self.on_close)
@@ -159,9 +170,13 @@ class Interface(wx.Frame, Leitor.RecebeLeitura):
             if self.dado_inicial == None:
                 self.dado_inicial = dado
             else:
-                return not self.dado_inicial == dado
+                return self.dado_inicial != dado
         else:
             return True
+
+    def Desabilita(self, controles):
+        for controle in controles:
+            controle.Disable()
 
     #função que limpa os dados da tela
     def limpa(self):
@@ -170,6 +185,8 @@ class Interface(wx.Frame, Leitor.RecebeLeitura):
 
         self.grafico_velocidade.limpa()
         self.grafico_aceleracao.limpa()
+
+        self.leitor.reinicia()
 
     #evento do check box de inicio automatico
     def on_chk_inicio_automatico(self, event):
@@ -183,11 +200,9 @@ class Interface(wx.Frame, Leitor.RecebeLeitura):
     #Evento do botao iniciar
     def on_iniciar(self, event):
         #limpa dados da tela
-        self.limpa()
         self.StatusBar.SetStatusText("Lendo dados da porta serial...")
 
-        #inicia leitura
-        self.leitor.inicia()
+        self.leitor.continua()
 
         #abre arquivos para escrita
         self.arquivo = open(self.arquivo_gravacao, "w")
@@ -201,7 +216,7 @@ class Interface(wx.Frame, Leitor.RecebeLeitura):
         self.StatusBar.SetStatusText("Ok")
 
         #finaliza leitura do arduino
-        self.leitor.finaliza()
+        self.leitor.pausa()
 
         #fecha arquivos
         if (self.arquivo != None):
@@ -211,6 +226,7 @@ class Interface(wx.Frame, Leitor.RecebeLeitura):
 
         #habilita novamento o checkbox
         self.chk_inicio_automatico.Enable()
+        self.btn_limpar.Enable()
 
     #processa os dados lidos do arduino
     def receber(self, dado_leitura):
@@ -231,7 +247,8 @@ class Interface(wx.Frame, Leitor.RecebeLeitura):
         else:
             #se vamos ler, podemos definir a leitura automatica como false e desabilita o checkbox durante leitura
             self.automatico = False
-            self.chk_inicio_automatico.Disable()
+            self.chk_inicio_automatico.SetValue(False)
+            self.Desabilita([self.chk_inicio_automatico, self.btn_limpar])
 
         #escreve informações nos arquivos
         if (self.arquivo != None and not self.arquivo.closed):
@@ -267,7 +284,11 @@ class Interface(wx.Frame, Leitor.RecebeLeitura):
         if (self.panel_grid.Size.GetHeight() < self.Size.GetHeight() - 150):
             self.panel_grid.SetSizerAndFit(self.sizer_grid)
 
+    def on_limpar(self, event):
+        self.limpa()
+
     #evento de fechar o programa
     def on_close(self, event):
         self.on_finalizar(event)
+        self.leitor.finaliza()
         self.app.Exit()
