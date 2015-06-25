@@ -34,7 +34,7 @@ class Grafico(wx.Panel):
     altura_grafico = 400
     largura_grafico = 500
 
-    def __init__(self, pai, posicao):
+    def __init__(self, pai, posicao, labely, labelx):
         wx.Panel.__init__(self, pai, -1, posicao, size=(Grafico.largura_grafico, Grafico.altura_grafico))
 
         #cria uma nova figura que vai conter o grafico
@@ -47,6 +47,8 @@ class Grafico(wx.Panel):
 
         #cria um só plot
         self.eixos = self.figura.add_subplot(111)
+        self.eixos.set_ylabel(labely)
+        self.eixos.set_xlabel(labelx)
 
     #desenha os pontos x e y. Dois vetores que devem ter o mesmo tamanho
     #os vertices serão (pontosX[n], pontosY[n])
@@ -112,15 +114,15 @@ class Interface(wx.Frame, Leitor.RecebeLeitura):
         self.Bind(wx.EVT_BUTTON, self.on_finalizar, id=3)
 
         #cria check box para inicio automático de leitura
-        self.chk_inicio_automatico = wx.CheckBox(self, 4, "Inicio automático (inicia no movimento).", (Interface.largura_botoes + 20, 15))
+        self.chk_inicio_automatico = wx.CheckBox(self, 4, "Inicio automatico (inicia no movimento).", (Interface.largura_botoes + 20, 15))
         self.Bind(wx.EVT_CHECKBOX, self.on_chk_inicio_automatico, id=4)
 
         #cria o panel onde ficará a grid
         self.panel_grid = scrolledpanel.ScrolledPanel(self, -1, (10, 70), (200, 300))
 
         #cria os graficos
-        self.grafico_velocidade = Grafico(self, (425, 10))
-        self.grafico_aceleracao = Grafico(self, (425, Grafico.altura_grafico + 20))
+        self.grafico_velocidade = Grafico(self, (425, 10), "POSICAO", "TEMPO")
+        self.grafico_aceleracao = Grafico(self, (425, Grafico.altura_grafico + 20), "VELOCIDADE", "TEMPO")
 
         #cria a grid para mostrar os dados da leitura mostrando no panel
         self.grid_dados = wxgrid.Grid(self.panel_grid)
