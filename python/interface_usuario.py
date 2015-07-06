@@ -14,12 +14,15 @@ class DadoLeituraVelocidadeAceleracao(Leitor.DadoLeitura):
     aceleracao = 0
     posicao_cru = 0
     posicao_cm = 0
+    soma_posicao_cm = 0
 
     def __init__(self, dado, tempo_leitura):
         super(DadoLeituraVelocidadeAceleracao, self).__init__(dado, tempo_leitura)
         self.dadoFloat = float(dado)
         self.posicao_cru = self.dadoFloat
         self.posicao_cm = (self.dadoFloat / 29.0) / 2.0 #distancia em CM
+        DadoLeituraVelocidadeAceleracao.soma_posicao_cm += self.posicao_cm
+        DadoLeituraVelocidadeAceleracao.tempo += self.tempo
         self.velocidade = self.posicao_cm / self.tempo
         self.aceleracao = self.velocidade / self.tempo
 

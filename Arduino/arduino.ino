@@ -40,5 +40,5 @@ void loop()
     Serial.println(duracao);
     
     /* Espera 1/60 segundos para rodar novamente, o que nos dá 60 medidas por segundo*/
-    delay(1000/60);
+    delay(1000/5);
 }

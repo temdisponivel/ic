@@ -32,7 +32,7 @@ class DadoLeitura(object):
 #classe para leitura dos dados que chegam da porta serial
 class Leitor(threading.Thread):
 
-    intervalo_leitura = 1.0/30.0
+    intervalo_leitura = 1.0/5.0
 
     def __init__(self, interface):
         #contrutor da thread
