@@ -254,6 +254,7 @@ class Interface(wx.Frame, Leitor.RecebeLeitura):
         self.chk_inicio_automatico.SetValue(False)
         self.btn_iniciar.SetLabel("Continuar")
         self.desabilita([self.chk_inicio_automatico, self.btn_finalizar, self.btn_iniciar])
+        self.leitor.tempo_leitura = 0
         self.inicio_leitura = time.clock()
 
     #Evento do botão finalizar
