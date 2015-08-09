@@ -157,8 +157,8 @@ class Interface(wx.Frame, Leitor.RecebeLeitura):
         self.sizer_aceleracao.Add(self.grafico_aceleracao)
         self.sizer_grid.Add(self.grid_dados)
         self.panel_grid.SetSizerAndFit(self.sizer_grid)
-        self.grafico_velocidade.SetSizerAndFit(self.sizer_velocidade)
-        self.grafico_aceleracao.SetSizerAndFit(self.sizer_aceleracao)
+        #self.grafico_velocidade.SetSizerAndFit(self.sizer_velocidade)
+        #self.grafico_aceleracao.SetSizerAndFit(self.sizer_aceleracao)
 
         #define valores iniciais
         self.arquivo = None
