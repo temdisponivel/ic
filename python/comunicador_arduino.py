@@ -41,7 +41,6 @@ class Leitor(threading.Thread):
         if not hasattr(interface, "receber"):
             raise Exception("O objeto deve conter o método de interface para o leitor. Definido em ComunicacaoArduino.RecebeLeitura")
 
-        self.setDaemon(False)
         self.setName("LEITOR SERIAL ARDUINO")
 
         #pega todas as portas seriais
@@ -75,7 +74,12 @@ class Leitor(threading.Thread):
         while (not self.stop_event.is_set()):
 
             #le as informações do arduino
-            linha_leitura = self.porta_serial.readline()
+            try:
+                linha_leitura = self.porta_serial.readline()
+            except Exception as ex:
+                print(ex)
+                wx.MessageBox(ex.__str__(), "ERRO", wx.OK)
+                return
 
             #se nao é pra processar, n faz nd
             if (not self.lendo):
@@ -105,6 +109,10 @@ class Leitor(threading.Thread):
     #fecha porta serial e finaliza a thread. Se chamar inicia após disso, acontece erro.
     #para pausar e reiniciar, use os métodos pausa e continua
     def finaliza(self):
-        self.stop_event.set()
-        self.porta_serial.close()
         self.lendo = False
+
+        if (self.porta_serial.isOpen()):
+            self.porta_serial.close()
+
+        if (not self.stop_event.is_set()):
+            self.stop_event.set()

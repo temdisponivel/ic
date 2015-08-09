@@ -59,7 +59,8 @@ class Grafico(wx.Panel):
         self.eixos.set_ylabel(self.labely)
         self.eixos.set_xlabel(self.labelx)
 
-        self.figura.set_size_inches(7, 4.2, forward=True)
+        self.canvas.SetSize((Grafico.largura_grafico,Grafico.altura_grafico))
+
         self.figura.set_edgecolor("m")
 
     #desenha os pontos x e y. Dois vetores que devem ter o mesmo tamanho
@@ -102,78 +103,76 @@ class Interface(wx.Frame, Leitor.RecebeLeitura):
         self.app.MainLoop()
 
     def cria_interface(self):
-        self.arquivo_gravacao = "saida_serial_arduino.txt"
-        self.arquivo_gravacao_csv = "saida_serial_arduino.csv"
+        try:
+            self.arquivo_gravacao = "saida_serial_arduino.txt"
+            self.arquivo_gravacao_csv = "saida_serial_arduino.csv"
 
-        self.sizer_janela = wx.BoxSizer(wx.HORIZONTAL)
+            self.sizer_janela = wx.BoxSizer(wx.HORIZONTAL)
 
-        #seta cor de fundo branca
-        self.SetBackgroundColour("white")
+            #seta cor de fundo branca
+            self.SetBackgroundColour("white")
 
-        #inicia o leitor serial
-        self.leitor = Leitor.Leitor(self)
+            #adiciona status bar
+            self.CreateStatusBar()
+            self.SetStatusText("Ok")
 
-        #adiciona status bar
-        self.CreateStatusBar()
-        self.SetStatusText("Ok")
+            #cria botão de iniciar e finalizar
+            self.btn_iniciar = wx.Button(self, 2, "Iniciar", pos=(10, 10), size=(Interface.largura_botoes, Interface.altura_botoes))
+            self.btn_pausar = wx.Button(self, 3, "Pausar", pos=(Interface.largura_botoes + 10, 10), size=(Interface.largura_botoes, Interface.altura_botoes))
+            self.btn_finalizar = wx.Button(self, 4, "Finalizar", pos=(Interface.largura_botoes * 2 + 10, 10), size=(Interface.largura_botoes, Interface.altura_botoes))
+            self.Bind(wx.EVT_BUTTON, self.on_iniciar, id=2)
+            self.Bind(wx.EVT_BUTTON, self.on_pausar, id=3)
+            self.Bind(wx.EVT_BUTTON, self.on_finalizar, id=4)
 
-        #cria botão de iniciar e finalizar
-        self.btn_iniciar = wx.Button(self, 2, "Iniciar", pos=(10, 10), size=(Interface.largura_botoes, Interface.altura_botoes))
-        self.btn_pausar = wx.Button(self, 3, "Pausar", pos=(Interface.largura_botoes + 10, 10), size=(Interface.largura_botoes, Interface.altura_botoes))
-        self.btn_finalizar = wx.Button(self, 4, "Finalizar", pos=(Interface.largura_botoes * 2 + 10, 10), size=(Interface.largura_botoes, Interface.altura_botoes))
-        self.Bind(wx.EVT_BUTTON, self.on_iniciar, id=2)
-        self.Bind(wx.EVT_BUTTON, self.on_pausar, id=3)
-        self.Bind(wx.EVT_BUTTON, self.on_finalizar, id=4)
+            #cria check box para inicio automático de leitura
+            self.chk_inicio_automatico = wx.CheckBox(self, 5, "Inicio automatico (inicia no movimento).", pos=(10, Interface.altura_botoes + 20))
+            self.Bind(wx.EVT_CHECKBOX, self.on_chk_inicio_automatico, id=5)
 
-        #cria check box para inicio automático de leitura
-        self.chk_inicio_automatico = wx.CheckBox(self, 5, "Inicio automatico (inicia no movimento).", pos=(10, Interface.altura_botoes + 20))
-        self.Bind(wx.EVT_CHECKBOX, self.on_chk_inicio_automatico, id=5)
+            self.lbl_segundos = wx.StaticText(self, pos=(Interface.largura_botoes * 3 + 15, 15), label="Ler por (segundos):")
+            self.txt_segundos = wx.TextCtrl(self, pos=(Interface.largura_botoes * 3 + self.lbl_segundos.Size.width + 25, 10), size=(Interface.altura_botoes, Interface.altura_botoes))
 
-        self.lbl_segundos = wx.StaticText(self, pos=(Interface.largura_botoes * 3 + 15, 15), label="Ler por (segundos):")
-        self.txt_segundos = wx.TextCtrl(self, pos=(Interface.largura_botoes * 3 + self.lbl_segundos.Size.width + 25, 10), size=(Interface.altura_botoes, Interface.altura_botoes))
+            #cria o panel onde ficará a grid
+            self.panel_grid = scrolledpanel.ScrolledPanel(self, -1, (10, 70), (200, 300))
 
-        #cria o panel onde ficará a grid
-        self.panel_grid = scrolledpanel.ScrolledPanel(self, -1, (10, 70), (200, 300))
+            #cria os graficos
+            self.grafico_velocidade = Grafico(self, (425, 10), "POSICAO", "TEMPO")
+            self.grafico_aceleracao = Grafico(self, (425, Grafico.altura_grafico + 20), "VELOCIDADE", "TEMPO")
 
-        #cria os graficos
-        self.grafico_velocidade = Grafico(self, (425, 10), "POSICAO", "TEMPO")
-        self.grafico_aceleracao = Grafico(self, (425, Grafico.altura_grafico + 20), "VELOCIDADE", "TEMPO")
+            #cria a grid para mostrar os dados da leitura mostrando no panel
+            self.grid_dados = wxgrid.Grid(self.panel_grid)
+            self.grid_dados.CreateGrid(0, 4)
+            self.grid_dados.SetColLabelValue(0, "T")
+            self.grid_dados.SetColLabelValue(1, "X")
+            self.grid_dados.SetColLabelValue(2, "V")
+            self.grid_dados.SetColLabelValue(3, "A")
 
-        #cria a grid para mostrar os dados da leitura mostrando no panel
-        self.grid_dados = wxgrid.Grid(self.panel_grid)
-        self.grid_dados.CreateGrid(0, 4)
-        self.grid_dados.SetColLabelValue(0, "T")
-        self.grid_dados.SetColLabelValue(1, "X")
-        self.grid_dados.SetColLabelValue(2, "V")
-        self.grid_dados.SetColLabelValue(3, "A")
+            #cria os sizer para os objetos da tela
+            self.sizer_grid = wx.BoxSizer(wx.VERTICAL)
+            self.sizer_velocidade = wx.BoxSizer(wx.HORIZONTAL)
+            self.sizer_aceleracao = wx.BoxSizer(wx.HORIZONTAL)
 
-        #cria os sizer para os objetos da tela
-        self.sizer_grid = wx.BoxSizer(wx.VERTICAL)
-        self.sizer_velocidade = wx.BoxSizer(wx.HORIZONTAL)
-        self.sizer_aceleracao = wx.BoxSizer(wx.HORIZONTAL)
+            #adiciona os objetos nos sizers
+            self.sizer_velocidade.Add(self.grafico_velocidade)
+            self.sizer_aceleracao.Add(self.grafico_aceleracao)
+            self.sizer_grid.Add(self.grid_dados)
+            self.panel_grid.SetSizerAndFit(self.sizer_grid)
 
-        #adiciona os objetos nos sizers
-        self.sizer_velocidade.Add(self.grafico_velocidade)
-        self.sizer_aceleracao.Add(self.grafico_aceleracao)
-        self.sizer_grid.Add(self.grid_dados)
-        self.panel_grid.SetSizerAndFit(self.sizer_grid)
-        #self.grafico_velocidade.SetSizer(self.sizer_velocidade)
-        #self.grafico_aceleracao.SetSizer(self.sizer_aceleracao)
+            #define valores iniciais
+            self.arquivo = None
+            self.arquivo_csv = None
+            self.automatico = False
+            self.dado_inicial = None
+            self.informacoes_leitura = []
 
-        #define valores iniciais
-        self.arquivo = None
-        self.arquivo_csv = None
-        self.automatico = False
-        self.dado_inicial = None
-        self.informacoes_leitura = []
+            #inicia leitor dos dados
+            self.leitor = Leitor.Leitor(self)
+            self.leitor.inicia()
 
-        #inicia leitor dos dados
-        self.leitor.inicia()
-
-        #conecta o evento de fechar a janela a função
-        self.Bind(wx.EVT_CLOSE, self.on_close)
-        self.SetAutoLayout(True)
-        self.Layout()
+            #conecta o evento de fechar a janela a função
+            self.Bind(wx.EVT_CLOSE, self.on_close)
+        except Exception as ex:
+            wx.MessageBox(ex.__str__(), "ERRO", wx.OK)
+            self.on_close(None)
 
     #valida se devemos ler o dado quando estiver no automatico
     def valida_leitura(self, dado):
@@ -333,7 +332,5 @@ class Interface(wx.Frame, Leitor.RecebeLeitura):
 
     #evento de fechar o programa
     def on_close(self, event):
-        self.limpa()
-        self.on_finalizar(event)
         self.leitor.finaliza()
         self.app.Exit()
