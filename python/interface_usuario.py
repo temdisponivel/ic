@@ -156,6 +156,8 @@ class Interface(wx.Frame, Leitor.RecebeLeitura):
             self.sizer_aceleracao.Add(self.grafico_aceleracao)
             self.sizer_grid.Add(self.grid_dados)
             self.panel_grid.SetSizerAndFit(self.sizer_grid)
+            self.grid_dados.SetMaxSize((self.grid_dados.GetSize().GetWidth(), self.Size.GetHeight() - 100))
+            self.panel_grid.SetMaxSize(self.grid_dados.GetMaxSize())
 
             #define valores iniciais
             self.arquivo = None
@@ -264,6 +266,8 @@ class Interface(wx.Frame, Leitor.RecebeLeitura):
         self.dado_inicial = None
         self.inicio_leitura = 0
 
+        self.atualiza_ui()
+
     #processa os dados lidos do arduino
     def receber(self, dado_leitura):
 
@@ -281,39 +285,14 @@ class Interface(wx.Frame, Leitor.RecebeLeitura):
         if not self.valida_leitura(informacoes):
             return None
 
+        #concatena as informacoes no vetor de informacoes
+        self.informacoes_leitura.append(informacoes)
+
         #escreve informações nos arquivos
         if (self.arquivo != None and not self.arquivo.closed):
             self.arquivo.write(informacoes.__str__() + '\r')
         if (self.arquivo_csv != None and not self.arquivo_csv.closed):
             self.arquivo_csv.write(informacoes.get_csv() + '\r')
-
-        #adiciona a linha na grid
-        self.grid_dados.InsertRows(self.grid_dados.GetNumberRows())
-        self.grid_dados.SetCellValue(self.grid_dados.GetNumberRows()-1, 0, str(informacoes.tempo))
-        self.grid_dados.SetCellValue(self.grid_dados.GetNumberRows()-1, 1, str(informacoes.posicao_cm))
-        self.grid_dados.SetCellValue(self.grid_dados.GetNumberRows()-1, 2, str(informacoes.velocidade))
-        self.grid_dados.SetCellValue(self.grid_dados.GetNumberRows()-1, 3, str(informacoes.aceleracao))
-
-        #concatena as informacoes no vetor de informacoes
-        self.informacoes_leitura.append(informacoes)
-
-        velocidades = []
-        tempos = []
-        posicoes = []
-
-        #separa as velocidades, tempos e posicoes de todas as leituras
-        for informacao in self.informacoes_leitura:
-            tempos.append(informacao.tempo)
-            posicoes.append(informacao.posicao_cm)
-            velocidades.append(informacao.velocidade)
-
-        #printa tudo nos graficos
-        self.grafico_velocidade.desenha(tempos, posicoes)
-        self.grafico_aceleracao.desenha(tempos, velocidades)
-
-        #atualiza tamanho da grid desde que seja menor que a janela
-        if (self.panel_grid.Size.GetHeight() < self.Size.GetHeight() - 150):
-            self.panel_grid.SetSizerAndFit(self.sizer_grid)
 
         try:
             #valida valor do campo
@@ -324,6 +303,32 @@ class Interface(wx.Frame, Leitor.RecebeLeitura):
                 self.on_pausar(None)
         except Exception:
             return None
+
+    def atualiza_ui(self):
+
+        self.velocidades = []
+        self.tempos = []
+        self.posicoes = []
+
+        #separa as velocidades, tempos e posicoes de todas as leituras
+        for informacao in self.informacoes_leitura:
+            #adiciona a linha na grid
+            self.grid_dados.AppendRows()
+            self.grid_dados.SetCellValue(self.grid_dados.GetNumberRows()-1, 0, str(informacao.tempo))
+            self.grid_dados.SetCellValue(self.grid_dados.GetNumberRows()-1, 1, str(informacao.posicao_cm))
+            self.grid_dados.SetCellValue(self.grid_dados.GetNumberRows()-1, 2, str(informacao.velocidade))
+            self.grid_dados.SetCellValue(self.grid_dados.GetNumberRows()-1, 3, str(informacao.aceleracao))
+
+            self.tempos.append(informacao.tempo)
+            self.posicoes.append(informacao.posicao_cm)
+            self.velocidades.append(informacao.velocidade)
+
+        #printa tudo nos graficos
+        self.grafico_velocidade.desenha(self.tempos, self.posicoes)
+        self.grafico_aceleracao.desenha(self.tempos, self.velocidades)
+
+        #atualiza tamanho da grid desde que seja menor que a janela
+        self.panel_grid.Fit()
 
     #evento do botão limpar
     def on_finalizar(self, event):
