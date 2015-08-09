@@ -184,7 +184,7 @@ class Interface(wx.Frame, Leitor.RecebeLeitura):
                 self.dado_inicial = dado
             else:
                 if math.fabs(self.dado_inicial.posicao_cm - dado.posicao_cm) > 0.1:
-                    self.inicia_leitura()
+                    self.on_iniciar(None)
         else:
             return True
 
