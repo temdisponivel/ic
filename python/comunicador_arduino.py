@@ -41,6 +41,9 @@ class Leitor(threading.Thread):
         if not hasattr(interface, "receber"):
             raise Exception("O objeto deve conter o método de interface para o leitor. Definido em ComunicacaoArduino.RecebeLeitura")
 
+        self.setDaemon(False)
+        self.setName("LEITOR SERIAL ARDUINO")
+
         #pega todas as portas seriais
         portas = list(serial.tools.list_ports.comports())
         porta_valida = False
@@ -49,7 +52,7 @@ class Leitor(threading.Thread):
         for porta in portas:
             try:
                 porta_serial = serial.Serial(porta[0], 9600)
-                self.portal_serial = porta_serial
+                self.porta_serial = porta_serial
                 porta_valida = True
                 break
             except Exception as ex:
@@ -71,12 +74,12 @@ class Leitor(threading.Thread):
     def run(self):
         while (not self.stop_event.is_set()):
 
+            #le as informações do arduino
+            linha_leitura = self.porta_serial.readline()
+
             #se nao é pra processar, n faz nd
             if (not self.lendo):
                 continue
-
-            #le as informações do arduino
-            linha_leitura = self.portal_serial.readline()
 
             #manda as informações para o objeto de interface
             wx.CallAfter(self.interface.receber, DadoLeitura(linha_leitura, self.tempo_leitura))

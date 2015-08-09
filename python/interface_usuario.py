@@ -3,7 +3,7 @@ import time
 import wx
 import wx.grid as wxgrid
 import wx.lib.scrolledpanel as scrolledpanel
-import ComunicadorArduino as Leitor
+import comunicador_arduino as Leitor
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
 
@@ -157,8 +157,8 @@ class Interface(wx.Frame, Leitor.RecebeLeitura):
         self.sizer_aceleracao.Add(self.grafico_aceleracao)
         self.sizer_grid.Add(self.grid_dados)
         self.panel_grid.SetSizerAndFit(self.sizer_grid)
-        #self.grafico_velocidade.SetSizerAndFit(self.sizer_velocidade)
-        #self.grafico_aceleracao.SetSizerAndFit(self.sizer_aceleracao)
+        #self.grafico_velocidade.SetSizer(self.sizer_velocidade)
+        #self.grafico_aceleracao.SetSizer(self.sizer_aceleracao)
 
         #define valores iniciais
         self.arquivo = None
@@ -172,6 +172,8 @@ class Interface(wx.Frame, Leitor.RecebeLeitura):
 
         #conecta o evento de fechar a janela a função
         self.Bind(wx.EVT_CLOSE, self.on_close)
+        self.SetAutoLayout(True)
+        self.Layout()
 
     #valida se devemos ler o dado quando estiver no automatico
     def valida_leitura(self, dado):
@@ -246,7 +248,7 @@ class Interface(wx.Frame, Leitor.RecebeLeitura):
         #se vamos ler, podemos definir a leitura automatica como false e desabilita o checkbox durante leitura
         self.automatico = False
         self.chk_inicio_automatico.SetValue(False)
-        self.btn_iniciar.SetLabelText("Continuar")
+        self.btn_iniciar.SetLabel("Continuar")
         self.desabilita([self.chk_inicio_automatico, self.btn_finalizar, self.btn_iniciar])
         self.inicio_leitura = time.clock()
 
@@ -287,7 +289,7 @@ class Interface(wx.Frame, Leitor.RecebeLeitura):
             self.arquivo_csv.write(informacoes.get_csv() + '\r')
 
         #adiciona a linha na grid
-        self.grid_dados.AppendRows()
+        self.grid_dados.InsertRows(self.grid_dados.GetNumberRows())
         self.grid_dados.SetCellValue(self.grid_dados.GetNumberRows()-1, 0, str(informacoes.tempo))
         self.grid_dados.SetCellValue(self.grid_dados.GetNumberRows()-1, 1, str(informacoes.posicao_cm))
         self.grid_dados.SetCellValue(self.grid_dados.GetNumberRows()-1, 2, str(informacoes.velocidade))
@@ -319,7 +321,7 @@ class Interface(wx.Frame, Leitor.RecebeLeitura):
             tempo_leitura = float(self.txt_segundos.GetValue())
 
             #se passou do tempo, pausa a leitura
-            if (time.clock() - self.inicio_leitura > tempo_leitura):
+            if (time.clock() - self.inicio_leitura >= tempo_leitura):
                 self.on_pausar(None)
         except Exception:
             return None
@@ -327,7 +329,7 @@ class Interface(wx.Frame, Leitor.RecebeLeitura):
     #evento do botão limpar
     def on_finalizar(self, event):
         self.limpa()
-        self.btn_iniciar.SetLabelText("Iniciar")
+        self.btn_iniciar.SetLabel("Iniciar")
 
     #evento de fechar o programa
     def on_close(self, event):
