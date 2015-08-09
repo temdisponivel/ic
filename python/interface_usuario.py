@@ -333,4 +333,4 @@ class Interface(wx.Frame, Leitor.RecebeLeitura):
     #evento de fechar o programa
     def on_close(self, event):
         self.leitor.finaliza()
-        self.app.Exit()
+        self.Destroy()

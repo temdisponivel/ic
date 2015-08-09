@@ -42,6 +42,7 @@ class Leitor(threading.Thread):
             raise Exception("O objeto deve conter o método de interface para o leitor. Definido em ComunicacaoArduino.RecebeLeitura")
 
         self.setName("LEITOR SERIAL ARDUINO")
+        self.daemon = True
 
         #pega todas as portas seriais
         portas = list(serial.tools.list_ports.comports())
@@ -111,8 +112,6 @@ class Leitor(threading.Thread):
     def finaliza(self):
         self.lendo = False
 
-        if (self.porta_serial.isOpen()):
-            self.porta_serial.close()
+        self.porta_serial.close()
 
-        if (not self.stop_event.is_set()):
-            self.stop_event.set()
+        self.stop_event.set()
