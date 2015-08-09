@@ -156,6 +156,8 @@ class Interface(wx.Frame, Leitor.RecebeLeitura):
             self.sizer_aceleracao.Add(self.grafico_aceleracao)
             self.sizer_grid.Add(self.grid_dados)
             self.panel_grid.SetSizerAndFit(self.sizer_grid)
+            self.grid_dados.SetMaxSize((self.grid_dados.GetSize().GetWidth(), self.Size.GetHeight() - 100))
+            self.panel_grid.SetMaxSize(self.grid_dados.GetMaxSize())
 
             #define valores iniciais
             self.arquivo = None
@@ -312,8 +314,7 @@ class Interface(wx.Frame, Leitor.RecebeLeitura):
         self.grafico_aceleracao.desenha(tempos, velocidades)
 
         #atualiza tamanho da grid desde que seja menor que a janela
-        if (self.panel_grid.Size.GetHeight() < self.Size.GetHeight() - 150):
-            self.panel_grid.SetSizerAndFit(self.sizer_grid)
+        self.panel_grid.SetSizerAndFit(self.sizer_grid)
 
         try:
             #valida valor do campo
