@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 import serial
-import platform
 import threading
 import serial.tools.list_ports
 import time
+import wx
 
 #classe que representa uma interface de comunicação entre objetos para enviar os dados lidos do arduino
 class RecebeLeitura(object):
@@ -41,26 +41,32 @@ class Leitor(threading.Thread):
         if not hasattr(interface, "receber"):
             raise Exception("O objeto deve conter o método de interface para o leitor. Definido em ComunicacaoArduino.RecebeLeitura")
 
-        #define a porta padrão como ttyUSB0 para sistemas Unix
-        self.porta = '/dev/ttyUSB0'
+        self.setName("LEITOR SERIAL ARDUINO")
+        self.daemon = True
 
         #pega todas as portas seriais
-        self.portas = list(serial.tools.list_ports.comports())
+        portas = list(serial.tools.list_ports.comports())
+        porta_valida = False
 
         #para cada porta serial
-        for porta in self.portas:
-            #se estamos rodando no windows
-            if platform.system() == 'Windows':
-                if "USB Serial Port" in porta[1]:
-                    self.porta = porta[0]
+        for porta in portas:
+            try:
+                porta_serial = serial.Serial(porta[0], 9600)
+                self.porta_serial = porta_serial
+                porta_valida = True
+                break
+            except Exception as ex:
+                print(ex)
+                continue
+
+        if (not porta_valida):
+            raise IOError("Nao foi possivel conectar ao arduino via serial!")
 
         self.lendo = False
-        self.frequencia_leitura = 9600
         self.interface = interface
 
     def inicia(self):
         #abre o arquivo para leitura
-        self.porta_serial = serial.Serial(self.porta, self.frequencia_leitura)
         self.tempo_leitura = 0
         self.stop_event = threading.Event()
         self.start()
@@ -68,15 +74,20 @@ class Leitor(threading.Thread):
     def run(self):
         while (not self.stop_event.is_set()):
 
+            #le as informações do arduino
+            try:
+                linha_leitura = self.porta_serial.readline()
+            except Exception as ex:
+                print(ex)
+                wx.MessageBox(ex.__str__(), "ERRO", wx.OK)
+                return
+
             #se nao é pra processar, n faz nd
             if (not self.lendo):
                 continue
 
-            #le as informações do arduino
-            linha_leitura = self.porta_serial.readline()
-
             #manda as informações para o objeto de interface
-            self.interface.receber(DadoLeitura(linha_leitura, self.tempo_leitura))
+            wx.CallAfter(self.interface.receber, DadoLeitura(linha_leitura, self.tempo_leitura))
 
             #pega o tempo da leitura
             self.tempo_leitura += Leitor.intervalo_leitura
@@ -99,6 +110,8 @@ class Leitor(threading.Thread):
     #fecha porta serial e finaliza a thread. Se chamar inicia após disso, acontece erro.
     #para pausar e reiniciar, use os métodos pausa e continua
     def finaliza(self):
-        self.stop_event.set()
-        self.porta_serial.close()
         self.lendo = False
+
+        self.porta_serial.close()
+
+        self.stop_event.set()
