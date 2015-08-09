@@ -6,6 +6,7 @@ import wx.lib.scrolledpanel as scrolledpanel
 import comunicador_arduino as Leitor
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
+import math
 
 #classe para manipular os dados de leitura com a distancia, velocidade e aceleracao
 class DadoLeituraVelocidadeAceleracao(Leitor.DadoLeitura):
@@ -182,8 +183,8 @@ class Interface(wx.Frame, Leitor.RecebeLeitura):
             if self.dado_inicial == None:
                 self.dado_inicial = dado
             else:
-                self.inicia_leitura()
-                return self.dado_inicial != dado
+                if math.fabs(self.dado_inicial.posicao_cm - dado.posicao_cm) > 0.1:
+                    self.inicia_leitura()
         else:
             return True
 
@@ -222,8 +223,10 @@ class Interface(wx.Frame, Leitor.RecebeLeitura):
         self.chk_inicio_automatico.SetValue(self.automatico)
 
         if self.automatico:
-            self.on_iniciar(event)
+            self.leitor.continua()
             self.dado_inicial = None
+        else:
+            self.leitor.pausa()
 
     #Evento do botao iniciar
     def on_iniciar(self, event):
